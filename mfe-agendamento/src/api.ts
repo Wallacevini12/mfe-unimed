@@ -22,6 +22,25 @@ export async function listarAgendamentos(): Promise<Agendamento[]> {
   return Array.isArray(json) ? json : (json.data ?? [])
 }
 
+/**
+ * Retorna os horários já ocupados para um prestador numa data específica.
+ * Usado para desabilitar horários indisponíveis na tela de novo agendamento.
+ */
+export async function horariosOcupados(prestadorId: string, data: string): Promise<string[]> {
+  const todos = await listarAgendamentos()
+  const alvo = data.includes('T') ? data.split('T')[0] : data
+  return todos
+    .filter(a => {
+      if (a.prestadorId !== prestadorId) return false
+      if (a.status === 'CANCELADO') return false
+      const dataAg = typeof a.data === 'string'
+        ? (a.data.includes('T') ? a.data.split('T')[0] : a.data)
+        : a.data
+      return dataAg === alvo
+    })
+    .map(a => a.horario)
+}
+
 export async function criarAgendamento(payload: Agendamento): Promise<Agendamento> {
   const res = await fetch(`${BFF_URL}/agendamentos`, {
     method: 'POST',

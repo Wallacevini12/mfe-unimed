@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { criarAgendamento } from '../api'
+import { criarAgendamento, horariosOcupados } from '../api'
 
 const STEPS = ['Escolher serviço', 'Selecionar horário', 'Confirmar']
 
@@ -16,7 +16,6 @@ const PRESTADORES: Record<string, { id: string; nome: string }[]> = {
 }
 const HORARIOS = ['08:00','09:00','10:00','11:00','14:00','15:00','16:00','17:00']
 
-// Beneficiário fixo (logado) — em produção viria do contexto de autenticação
 const BENEFICIARIO = { id: 'b1', nome: 'Wallace Vinicius' }
 
 export default function NovoAgendamento() {
@@ -30,8 +29,27 @@ export default function NovoAgendamento() {
   const [confirmado, setConfirmado] = useState(false)
   const [salvando, setSalvando]     = useState(false)
   const [erro, setErro]             = useState('')
+  const [ocupados, setOcupados]     = useState<string[]>([])
+  const [carregandoHorarios, setCarregandoHorarios] = useState(false)
 
   const prestadores = especialidade ? PRESTADORES[especialidade] ?? [] : []
+
+  // Sempre que prestador + data mudarem, busca os horários já ocupados
+  useEffect(() => {
+    if (!prestador || !data) { setOcupados([]); return }
+    let ativo = true
+    setCarregandoHorarios(true)
+    horariosOcupados(prestador.id, data)
+      .then(h => { if (ativo) setOcupados(h) })
+      .catch(() => { if (ativo) setOcupados([]) })
+      .finally(() => { if (ativo) setCarregandoHorarios(false) })
+    return () => { ativo = false }
+  }, [prestador, data])
+
+  // Se o horário selecionado ficar ocupado, limpa a seleção
+  useEffect(() => {
+    if (horario && ocupados.includes(horario)) setHorario('')
+  }, [ocupados, horario])
 
   async function handleConfirmar() {
     if (!prestador) return
@@ -156,15 +174,35 @@ export default function NovoAgendamento() {
 
             {data && (
               <>
-                <h3 className="font-semibold text-gray-700">Horários disponíveis</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {HORARIOS.map(h => (
-                    <button key={h} onClick={() => setHorario(h)}
-                      className={`py-2 rounded-xl border text-sm font-medium transition-all ${
-                        horario === h ? 'border-unimed-green bg-unimed-light text-unimed-dark' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      }`}>{h}</button>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-700">Horários disponíveis</h3>
+                  {carregandoHorarios && <span className="text-xs text-gray-400">verificando disponibilidade…</span>}
                 </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {HORARIOS.map(h => {
+                    const indisponivel = ocupados.includes(h)
+                    return (
+                      <button key={h}
+                        onClick={() => !indisponivel && setHorario(h)}
+                        disabled={indisponivel}
+                        title={indisponivel ? 'Horário já ocupado para este prestador' : ''}
+                        className={`py-2 rounded-xl border text-sm font-medium transition-all relative ${
+                          indisponivel
+                            ? 'border-gray-100 bg-gray-100 text-gray-300 cursor-not-allowed line-through'
+                            : horario === h
+                              ? 'border-unimed-green bg-unimed-light text-unimed-dark'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}>
+                        {h}
+                      </button>
+                    )
+                  })}
+                </div>
+                {ocupados.length > 0 && (
+                  <p className="text-xs text-gray-400">
+                    Horários riscados já estão ocupados para {prestador?.nome} nesta data.
+                  </p>
+                )}
               </>
             )}
           </>

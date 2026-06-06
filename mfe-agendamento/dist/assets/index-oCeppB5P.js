@@ -1,5 +1,5 @@
 import { importShared } from './__federation_fn_import-Cp8lnkdz.js';
-import { j as jsxRuntimeExports, M as MeusAgendamentos, N as NovoAgendamento, B as BuscarHorarios, F as FilaEspera, A as Autorizacao } from './index-BqneVWaP.js';
+import { j as jsxRuntimeExports, M as MeusAgendamentos, N as NovoAgendamento, B as BuscarHorarios, F as FilaEspera, A as Autorizacao } from './index-GvfB7L7e.js';
 import { r as reactDomExports } from './index-D9Af7wOI.js';
 
 true&&(function polyfill() {

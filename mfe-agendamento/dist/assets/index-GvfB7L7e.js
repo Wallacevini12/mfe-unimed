@@ -53,6 +53,16 @@ async function listarAgendamentos() {
   const json = await res.json();
   return Array.isArray(json) ? json : json.data ?? [];
 }
+async function horariosOcupados(prestadorId, data) {
+  const todos = await listarAgendamentos();
+  const alvo = data.includes("T") ? data.split("T")[0] : data;
+  return todos.filter((a) => {
+    if (a.prestadorId !== prestadorId) return false;
+    if (a.status === "CANCELADO") return false;
+    const dataAg = typeof a.data === "string" ? a.data.includes("T") ? a.data.split("T")[0] : a.data : a.data;
+    return dataAg === alvo;
+  }).map((a) => a.horario);
+}
 async function criarAgendamento(payload) {
   const res = await fetch(`${BFF_URL}/agendamentos`, {
     method: "POST",
@@ -80,7 +90,7 @@ async function excluirAgendamento(id) {
 }
 
 const React = await importShared('react');
-const {useState: useState$2} = React;
+const {useState: useState$2,useEffect: useEffect$1} = React;
 
 const {useNavigate} = await importShared('react-router-dom');
 const STEPS = ["Escolher serviço", "Selecionar horário", "Confirmar"];
@@ -111,7 +121,30 @@ function NovoAgendamento() {
   const [confirmado, setConfirmado] = useState$2(false);
   const [salvando, setSalvando] = useState$2(false);
   const [erro, setErro] = useState$2("");
+  const [ocupados, setOcupados] = useState$2([]);
+  const [carregandoHorarios, setCarregandoHorarios] = useState$2(false);
   const prestadores = especialidade ? PRESTADORES[especialidade] ?? [] : [];
+  useEffect$1(() => {
+    if (!prestador || !data) {
+      setOcupados([]);
+      return;
+    }
+    let ativo = true;
+    setCarregandoHorarios(true);
+    horariosOcupados(prestador.id, data).then((h) => {
+      if (ativo) setOcupados(h);
+    }).catch(() => {
+      if (ativo) setOcupados([]);
+    }).finally(() => {
+      if (ativo) setCarregandoHorarios(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [prestador, data]);
+  useEffect$1(() => {
+    if (horario && ocupados.includes(horario)) setHorario("");
+  }, [ocupados, horario]);
   async function handleConfirmar() {
     if (!prestador) return;
     setSalvando(true);
@@ -233,16 +266,29 @@ function NovoAgendamento() {
           }
         ),
         data && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-semibold text-gray-700", children: "Horários disponíveis" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-2", children: HORARIOS.map((h) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => setHorario(h),
-              className: `py-2 rounded-xl border text-sm font-medium transition-all ${horario === h ? "border-unimed-green bg-unimed-light text-unimed-dark" : "border-gray-200 text-gray-600 hover:border-gray-300"}`,
-              children: h
-            },
-            h
-          )) })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-semibold text-gray-700", children: "Horários disponíveis" }),
+            carregandoHorarios && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-gray-400", children: "verificando disponibilidade…" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-2", children: HORARIOS.map((h) => {
+            const indisponivel = ocupados.includes(h);
+            return /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => !indisponivel && setHorario(h),
+                disabled: indisponivel,
+                title: indisponivel ? "Horário já ocupado para este prestador" : "",
+                className: `py-2 rounded-xl border text-sm font-medium transition-all relative ${indisponivel ? "border-gray-100 bg-gray-100 text-gray-300 cursor-not-allowed line-through" : horario === h ? "border-unimed-green bg-unimed-light text-unimed-dark" : "border-gray-200 text-gray-600 hover:border-gray-300"}`,
+                children: h
+              },
+              h
+            );
+          }) }),
+          ocupados.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-gray-400", children: [
+            "Horários riscados já estão ocupados para ",
+            prestador?.nome,
+            " nesta data."
+          ] })
         ] })
       ] }),
       step === 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
