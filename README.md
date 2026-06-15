@@ -2,20 +2,20 @@
 
 Camada de apresentação do Sistema de Agendamento Unimed, construída como **Microfrontend** com **React + Vite + Module Federation**. Um Shell (host) carrega dois microfrontends remotos de forma independente. O frontend consome exclusivamente o **BFF** — nunca acessa os microsserviços diretamente.
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
 unimed-mfe/
 ├── shell/             # Host (porta 5000) — layout, navegação e Dashboard
-│   └── src/pages/            → Dashboard (consome GET /aggregated-data)
+│   └── src/pages/            -> Dashboard (consome GET /aggregated-data)
 ├── mfe-agendamento/   # Microfrontend remoto (porta 5001)
 │   └── src/
-│       ├── api.ts            → cliente HTTP do BFF
-│       └── pages/            → MeusAgendamentos, NovoAgendamento
+│       ├── api.ts            -> cliente HTTP do BFF
+│       └── pages/            -> MeusAgendamentos, NovoAgendamento
 └── mfe-notificacao/   # Microfrontend remoto (porta 5002)
     └── src/
-        ├── api.ts            → cliente HTTP do BFF
-        └── pages/            → HistoricoNotificacoes, Preferencias, Templates
+        ├── api.ts            -> cliente HTTP do BFF
+        └── pages/            -> HistoricoNotificacoes, Preferencias, Templates
 ```
 
 ### Module Federation
@@ -27,7 +27,7 @@ O Shell consome dinamicamente os MFEs remotos via `remoteEntry.js`. Cada microfr
 - **Bloqueio de horários** — na seleção, horários já ocupados para o prestador aparecem desabilitados
 - **Notificações** — histórico (Azure SQL), preferências de canal e templates
 
-## 🛠️ Tecnologias
+## Tecnologias
 
 - **React** + **TypeScript**
 - **Vite** + **@originjs/vite-plugin-federation** (Module Federation)
@@ -35,7 +35,7 @@ O Shell consome dinamicamente os MFEs remotos via `remoteEntry.js`. Cada microfr
 - **Tailwind CSS** (estilização)
 - **Fetch API** (consumo do BFF)
 
-## ▶️ Como rodar localmente
+## Como rodar localmente
 
 Cada projeto roda separadamente. Em **três terminais**:
 
@@ -66,5 +66,15 @@ VITE_BFF_URL=http://localhost:3000
 
 > Pré-requisito: o BFF (porta 3000) e os microsserviços devem estar rodando.
 
-## 🎥 Vídeo de demonstração
+## Vídeo de demonstração
 https://youtu.be/yXW6vKhXH8o
+
+## Equipe
+
+- Gabriel Girotto
+- Giovani Tortatto
+- Lucas Cunha
+- Matheus Garozi
+- Wallace Vinicius
+
+> Pontifícia Universidade Católica do Paraná (PUCPR) — Arquitetura e Soluções Cloud — 2026
